@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fik AI</title>
+    <style>
+        /* Styling sederhana ala dark mode */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        header {
+            background-color: #222;
+            padding: 15px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            border-bottom: 1px solid #333;
+        }
+        #chat-box {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .message {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 10px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        .user {
+            background-color: #0056b3;
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
+        }
+        .ai {
+            background-color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+        }
+        .error {
+            background-color: #8b0000;
+            align-self: center;
+            font-size: 14px;
+            text-align: center;
+        }
+        footer {
+            padding: 15px;
+            background-color: #222;
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background-color: #333;
+            color: #fff;
+            outline: none;
+        }
+        button {
+            padding: 12px 20px;
+            border-radius: 5px;
+            border: none;
+            background-color: #0056b3;
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <header>🤖 Fik AI</header>
+    
+    <div id="chat-box">
+        <!-- Pesan akan muncul di sini -->
+        <div class="message ai">Halo! Ada yang bisa saya bantu?</div>
+    </div>
+
+    <footer>
+        <input type="text" id="user-input" placeholder="Tulis pesan..." autocomplete="off">
+        <button id="send-btn" onclick="kirimPesan()">Kirim</button>
+    </footer>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        // Fungsi untuk menambahkan pesan ke layar
+        function tambahPesan(teks, pengirim) {
+            const div = document.createElement('div');
+            div.classList.add('message', pengirim);
+            div.textContent = teks;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll ke bawah
+        }
+
+        // Fungsi utama untuk mengirim pesan
+        async function kirimPesan() {
+            const pesan = userInput.value.trim();
+            if (!pesan) return;
+
+            // Tampilkan pesan user
+            tambahPesan(pesan, 'user');
+            userInput.value = '';
+            
+            // Nonaktifkan tombol sementara
+            sendBtn.disabled = true;
+            sendBtn.textContent = '...';
+
+            try {
+                // Panggil backend Vercel kita sendiri
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ prompt: pesan })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Terjadi kesalahan di server');
+                }
+
+                // Tampilkan balasan AI
+                tambahPesan(data.balasan, 'ai');
+
+            } catch (error) {
+                // Tampilkan pesan error jika gagal
+                tambahPesan('Error: ' + error.message, 'error');
+            } finally {
+                // Aktifkan kembali tombol
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Kirim';
+                userInput.focus();
+            }
+        }
+
+        // Agar bisa kirim dengan tombol Enter
+        userInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                kirimPesan();
+            }
+        });
+    </script>
+</body>
+</html>
